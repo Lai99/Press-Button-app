@@ -29,8 +29,8 @@ debug   proto   :HWND
 	.DATA
 ;Deug------------------------------------------
 DebugDlgName      db          'DebugDlg',0	
-szTest        db          513 dup (0)	
-lpTest        LPSTR       offset szTest
+szTest        db          601 dup (0)	
+posTest       dd          0
 ;----------------------------------------------	
 ClassName     db   				'Press'
 AppName       db          'Press Run/Stop',0
@@ -204,20 +204,20 @@ press       proc
         local    szClass:DWORD
         invoke   FindWindow,NULL,addr szString
         mov      hWnd1,eax
-        invoke   SetForegroundWindow,hWnd1
-        invoke   SetActiveWindow,hWnd1
+;        invoke   SetForegroundWindow,hWnd1
+;        invoke   SetActiveWindow,hWnd1
 ;Debug----------------------------------   
         invoke   debug,hWnd1   
 ;---------------------------------------  
         invoke   GetMenu,hWnd1
         mov      hWnd2,eax 
          
-;        invoke   debug,hWnd2
+        invoke   debug,hWnd2
 
         invoke   GetSubMenu,hWnd2,sub_menu
         mov      hWnd2,eax
         
-;        invoke   debug,hWnd2
+        invoke   debug,hWnd2
 
         invoke   GetMenuItemID,hWnd2,sub_menu_item
         mov      id,eax
@@ -227,7 +227,7 @@ press       proc
         invoke   WindowFromPoint,run_button_crd.x,run_button_crd.y
         mov      hWnd1,eax
         
-;        invoke   debug,hWnd1
+        invoke   debug,hWnd1
 ;        invoke   SetCursorPos,button_crd.x,button_crd.y
         
         invoke   PostMessage,hWnd1,WM_LBUTTONDOWN,MK_LBUTTON,posButton
@@ -237,13 +237,14 @@ press       proc
         invoke   WindowFromPoint,close_button_crd.x,close_button_crd.y
         mov      hWnd1,eax
         
-;        invoke   debug,hWnd1
+        invoke   debug,hWnd1
 
         invoke   PostMessage,hWnd1,WM_LBUTTONDOWN,MK_LBUTTON,posButton
         invoke   PostMessage,hWnd1,WM_LBUTTONUP,MK_LBUTTON,posButton
 
 ;Debug----------------------------------       
-        invoke  DialogBoxParam,hInstance,offset DebugDlgName,hwnd,addr DebugDlgProc,NULL 
+        invoke   DialogBoxParam,hInstance,offset DebugDlgName,hwnd,addr DebugDlgProc,NULL 
+        invoke   SetTimer,hwnd,TimerID,Time,NULL
 ;---------------------------------------
         ret
 press endp
@@ -344,6 +345,10 @@ DebugDlgProc proc hWnd:HWND,uMsg:UINT,wParam:WPARAM,lParam:LPARAM
          LOCAL    nWinSize:RECT
          LOCAL    hWndEdit:HWND
 .if uMsg==WM_INITDIALOG
+         invoke   KillTimer,hwnd,TimerID
+;initial pos. of result string
+         mov      posTest,0
+;set edit range match window                 
          invoke   GetDlgItem,hWnd,IDC_Edit
          mov      hWndEdit,eax
          invoke   GetClientRect,hWnd,addr nWinSize
@@ -366,15 +371,19 @@ DebugDlgProc endp
 
 ;For Debug use. Translate value into string (8bits inital)
 ;*Need declare a string to store result.(ex:szTest)
-debug   proc   x1:DWORD
-        local    show_bit:BYTE
+debug   proc   uses edi esi x1:DWORD
+        local    show_bit:DWORD
         local    shift:BYTE
         mov      show_bit,8
         mov      edx,offset szTest
+        add      edx,posTest
+        
 .while  show_bit > 0
-        mov      al,show_bit
-        mov      shift,al
+        mov      eax,show_bit
+        mov      shift,al  
+;from 7 to 0             
         sub      shift,1
+;4bits per char -> shl 2
         shl      shift,2 
         mov      eax,x1
         mov      cl,shift                  
@@ -389,6 +398,21 @@ debug   proc   x1:DWORD
         inc      edx
         dec      show_bit
 .endw        
+;add Cr
+        mov      eax,13       
+        mov      [edx],eax
+        inc      edx
+;add Lf
+        mov      eax,10    
+        mov      [edx],eax
+        inc      edx
+;add end string        
+        mov      eax,0    
+        mov      [edx],eax
+        inc      edx
+;8bits + 2 chars        
+        add      posTest,10
+        
         ret
 debug endp  
 
