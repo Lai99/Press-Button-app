@@ -1,9 +1,11 @@
 # Object files
 *.o
+*.obj
 
 # Libraries
 *.lib
 *.a
+*.pdb
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -15,3 +17,8 @@
 *.exe
 *.out
 *.app
+*.bat
+*.lnk
+*.res
+*.ilk
+
